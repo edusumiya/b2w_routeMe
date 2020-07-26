@@ -6,15 +6,15 @@
     android:layout_height="match_parent"
     tools:context=".scenes.map.MapActivity">
 
-    <SearchView
+    <fragment
         android:id="@+id/searchView"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-    </SearchView>
+        app:layout_constraintTop_toTopOf="parent"
+        android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"
+        />
 
     <fragment
         android:id="@+id/map"
