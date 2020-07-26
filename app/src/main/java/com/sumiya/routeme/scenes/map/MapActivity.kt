@@ -2,11 +2,8 @@ package com.sumiya.routeme.scenes.map
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -16,19 +13,33 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.*
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener
 import com.sumiya.routeme.R
-import java.lang.Exception
-import java.time.Duration
-
 
 interface MapActivityProtocol {
+    /**
+     * Map Property
+     */
     var mMap: GoogleMap?
+
+    /**
+     * Sets a Marker on Map
+     *
+     * @param location
+     */
     fun setMapMarker(location: LatLng)
+
+    /**
+     * Gets the user location permission
+     *
+     */
     fun getLocationPermission()
 }
 
