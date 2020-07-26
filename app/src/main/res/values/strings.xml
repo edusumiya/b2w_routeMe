@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">RouteMe</string>
+    <string name="route_me_title">Route Me</string>
     <string name="title_activity_maps">Map</string>
+    <string name="localHint">"Pesquise por um Local"</string>
+
+    <string name="genericError">Ocorreu um erro</string>
+    <string name="placeError">Falha ao buscar lugar</string>
 </resources>

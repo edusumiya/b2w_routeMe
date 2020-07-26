@@ -2,31 +2,33 @@ package com.sumiya.routeme.scenes.map
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.common.api.Status
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener
 import com.sumiya.routeme.R
-import com.sumiya.routeme.enums.MarkerType
-import kotlinx.android.synthetic.main.activity_main.*
+import java.lang.Exception
+import java.time.Duration
 
 
 interface MapActivityProtocol {
     var mMap: GoogleMap?
-    fun setMapMarker(location: LatLng, markerType: MarkerType)
+    fun setMapMarker(location: LatLng)
     fun getLocationPermission()
 }
 
@@ -42,7 +44,7 @@ class MapActivity : AppCompatActivity(), MapActivityProtocol, OnMapReadyCallback
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        presenter = MapPresenter(this)
+        presenter = MapPresenter(this, applicationContext)
 
         configureData()
         configureUI()
@@ -62,7 +64,7 @@ class MapActivity : AppCompatActivity(), MapActivityProtocol, OnMapReadyCallback
             supportFragmentManager.findFragmentById(R.id.searchView)
                     as AutocompleteSupportFragment
 
-        autocompleteFragment.setHint("Pesquise por um Local")
+        autocompleteFragment.setHint(getString(R.string.localHint))
 
         // Specify the types of place data to return.
         autocompleteFragment.setPlaceFields(listOf(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG))
@@ -70,22 +72,49 @@ class MapActivity : AppCompatActivity(), MapActivityProtocol, OnMapReadyCallback
         // Set up a PlaceSelectionListener to handle the response.
         autocompleteFragment.setOnPlaceSelectedListener(object : PlaceSelectionListener {
             override fun onPlaceSelected(place: Place) {
-                Log.i("", "Place: ${place.name}, ${place.id}")
-                setMapMarker(place.latLng!!,MarkerType.DESTINY)
+                Toast.makeText(applicationContext, place.name, Toast.LENGTH_LONG).show()
+
+                setMapMarker(place.latLng!!)
             }
 
             override fun onError(status: Status) {
-                Log.i("", "An error occurred: $status")
+                Toast.makeText(applicationContext,getString(R.string.placeError), Toast.LENGTH_LONG).show()
             }
         })
 
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync(this)
+    }
 
-        locationButton.setOnClickListener {
-            presenter.getDeviceLocation()
+    private fun setMarkersToZoom(destinyMarker: MarkerOptions) {
+        try {
+            val userMarkerOptions = MarkerOptions()
+
+            userMarkerOptions.position(LatLng(presenter.userLastLocation!!.latitude,presenter.userLastLocation!!.longitude))
+            userMarkerOptions.title("User Position")
+
+            val markers = mutableListOf<MarkerOptions>()
+            markers.add(userMarkerOptions)
+            markers.add(destinyMarker)
+            zoomToFitLocations(markers)
+        } catch (exception: Exception) {
+            Toast.makeText(applicationContext,getString(R.string.genericError), Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun zoomToFitLocations(markers: List<MarkerOptions>) {
+        val builder = LatLngBounds.Builder()
+
+        for (marker in markers) {
+            builder.include(marker.position)
+        }
+
+        val bounds = builder.build()
+        val padding = 300
+        val cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, padding)
+
+        mMap?.animateCamera(cameraUpdate)
     }
     //endregion
 
@@ -99,32 +128,21 @@ class MapActivity : AppCompatActivity(), MapActivityProtocol, OnMapReadyCallback
     //endregion
 
     //region MapActivityProtocol
-    override fun setMapMarker(location: LatLng, markerType: MarkerType) {
+    override fun setMapMarker(location: LatLng) {
         val markerOptions = MarkerOptions()
 
         markerOptions.position(location)
+        markerOptions.title("Destiny Position")
+        markerOptions.icon(
+            BitmapDescriptorFactory.defaultMarker(
+                BitmapDescriptorFactory.HUE_ROSE
+            )
+        )
 
-        when(markerType) {
-            MarkerType.USER -> {
-                markerOptions.title("User Position")
-                markerOptions.icon(
-                    BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_AZURE
-                    )
-                )
-            }
-
-            MarkerType.DESTINY -> {
-                markerOptions.title("Destiny Position")
-                markerOptions.icon(
-                    BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_ROSE
-                    )
-                )
-            }
-        }
-
+        mMap?.clear()
         mMap?.addMarker(markerOptions)
+
+        setMarkersToZoom(markerOptions)
     }
 
     override fun getLocationPermission() {
@@ -135,6 +153,7 @@ class MapActivity : AppCompatActivity(), MapActivityProtocol, OnMapReadyCallback
             == PackageManager.PERMISSION_GRANTED
         ) {
             presenter.locationPermissionGranted = true
+            presenter.updateLocationUI()
         } else {
             ActivityCompat.requestPermissions(
                 this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),

@@ -1,26 +1,29 @@
 package com.sumiya.routeme.scenes.map
 
+import android.content.Context
 import android.location.Location
 import android.util.Log
+import android.widget.Toast
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
-import com.sumiya.routeme.enums.MarkerType
+import com.sumiya.routeme.R
+import java.security.AccessControlContext
 
 interface MapPresenterProtocol {
     var fusedLocationProviderClient: FusedLocationProviderClient
     var locationPermissionGranted: Boolean
-
+    var userLastLocation: Location?
     fun updateLocationUI()
     fun getDeviceLocation()
 }
 
-class MapPresenter(private val view: MapActivityProtocol) : MapPresenterProtocol {
+class MapPresenter(private val view: MapActivityProtocol, private val applicationContext: Context) : MapPresenterProtocol {
     //region Properties and Variables
     override var locationPermissionGranted = false
     override lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    override var userLastLocation: Location? = null
 
-    private var userLastLocation: Location? = null
     private val defaultLocation = LatLng(-33.8523341, 151.2106085)
     //endregion
 
@@ -40,7 +43,7 @@ class MapPresenter(private val view: MapActivityProtocol) : MapPresenterProtocol
                 view.getLocationPermission()
             }
         } catch (e: SecurityException) {
-            Log.e("Exception: %s", e.message, e)
+            Toast.makeText(applicationContext,e.message, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -62,10 +65,6 @@ class MapPresenter(private val view: MapActivityProtocol) : MapPresenterProtocol
                                     position, DEFAULT_ZOOM.toFloat()
                                 )
                             )
-
-                            view.mMap?.clear()
-                            view.setMapMarker(position, MarkerType.USER)
-
                         }
                     } else {
                         view.mMap?.moveCamera(
@@ -77,7 +76,7 @@ class MapPresenter(private val view: MapActivityProtocol) : MapPresenterProtocol
                 }
             }
         } catch (e: SecurityException) {
-            Log.e("Exception: %s", e.message, e)
+            Toast.makeText(applicationContext,e.message, Toast.LENGTH_LONG).show()
         }
     }
     //endregion
